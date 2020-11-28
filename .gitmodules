@@ -1,0 +1,3 @@
+[submodule "tools/AsymmetricWindow"]
+	path = tools/AsymmetricWindow
+	url = https://github.com/k2kobayashi/AsymmetricWindow
