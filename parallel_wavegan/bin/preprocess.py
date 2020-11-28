@@ -21,6 +21,9 @@ from parallel_wavegan.datasets import AudioDataset
 from parallel_wavegan.datasets import AudioSCPDataset
 from parallel_wavegan.utils import write_hdf5
 
+import scipy.signal as sp
+from asynmetric_window.window import itug_729_window
+
 
 def logmelfilterbank(audio,
                      sampling_rate,
@@ -51,9 +54,15 @@ def logmelfilterbank(audio,
         ndarray: Log Mel filterbank feature (#frames, num_mels).
 
     """
+
+    if window == "hann":
+        win = sp.hann(fft_size)
+    elif window == "itu-g":
+        win = itug_729_window(fft_size)
+
     # get amplitude spectrogram
     x_stft = librosa.stft(audio, n_fft=fft_size, hop_length=hop_size,
-                          win_length=win_length, window=window, pad_mode="reflect")
+                          win_length=win_length, window=win, pad_mode="reflect")
     spc = np.abs(x_stft).T  # (#frames, #bins)
 
     # get mel basis
@@ -167,7 +176,10 @@ def main():
 
         # make sure the audio length and feature length are matched
         audio = np.pad(audio, (0, config["fft_size"]), mode="reflect")
-        audio = audio[:len(mel) * config["hop_size"]]
+        if config["win_shift"] == 0:
+            audio = audio[:len(mel) * config["hop_size"]]
+        else:
+            audio = audio[config["win_shift"]: len(mel) * config["hop_size"] + config["win_shift"]]
         assert len(mel) * config["hop_size"] == len(audio)
 
         # apply global gain
